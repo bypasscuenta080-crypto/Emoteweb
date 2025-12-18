@@ -1,17 +1,7 @@
 // Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getFirestore, doc, getDoc, collection, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-// Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDhnw6_WzZk418vAmtUFtkSLOJcJUmVp1A",
-  authDomain: "jwaxprime.firebaseapp.com",
-  projectId: "jwaxprime",
-  storageBucket: "jwaxprime.firebasestorage.app",
-  messagingSenderId: "182117079996",
-  appId: "1:182117079996:web:5501befd6c611900efe9b9",
-  measurementId: "G-W9GJ02LQBZ"
-};
+import { firebaseConfig } from './config.js';
 
 // Initialize Firebase
 let app, db;
@@ -41,7 +31,7 @@ if (!sessionStorage.getItem('auth')) {
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
     sessionStorage.removeItem('auth');
     window.location.href = 'index.html';
-}); 
+});
 
 // Loader Functions
 function showLoader() {
@@ -68,34 +58,34 @@ async function processToastQueue() {
         isProcessingToast = false;
         return;
     }
-    
+
     isProcessingToast = true;
-    
+
     // Remove existing toasts
     const existingToasts = document.querySelectorAll('.toast');
     existingToasts.forEach(toast => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 200);
     });
-    
+
     const { message, type } = toastQueue.shift();
-    
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    
+
     const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
-    
+
     toast.innerHTML = `
         <div class="toast-icon">${icon}</div>
         <div class="toast-message">${message}</div>
     `;
-    
+
     const container = document.getElementById('toastContainer');
     if (container) {
         container.appendChild(toast);
-        
+
         setTimeout(() => toast.classList.add('show'), 10);
-        
+
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => {
@@ -114,48 +104,48 @@ async function processToastQueue() {
 async function loadServers() {
     try {
         console.log('🔄 Loading servers from Firebase...');
-        
+
         if (!db) {
             console.error('❌ Database not initialized');
             showToast('Database connection failed', 'error');
             return;
         }
-        
+
         const serversCol = collection(db, 'servers');
         const serverSnapshot = await getDocs(serversCol);
-        
+
         const indianSelect = document.getElementById('indianServerSelect');
         const bangladeshSelect = document.getElementById('bangladeshServerSelect');
         const otherSelect = document.getElementById('otherServerSelect');
-        
+
         if (!indianSelect || !bangladeshSelect || !otherSelect) {
             console.error('❌ Server select elements not found');
             return;
         }
-        
+
         // Clear existing options
         indianSelect.innerHTML = '<option value="">Select Indian Server...</option>';
         bangladeshSelect.innerHTML = '<option value="">Select Bangladesh Server...</option>';
         otherSelect.innerHTML = '<option value="">Select Other Server...</option>';
-        
+
         const servers = [];
         serverSnapshot.forEach(doc => {
             const serverData = doc.data();
             console.log('📡 Found server:', serverData);
             servers.push({ id: doc.id, ...serverData });
         });
-        
+
         // Sort by order
         servers.sort((a, b) => (a.order || 0) - (b.order || 0));
-        
+
         // Categorize servers based on region field
         let indianCount = 0, bangladeshCount = 0, otherCount = 0;
-        
+
         servers.forEach(server => {
             const option = document.createElement('option');
             option.value = server.baseUrl;
             option.textContent = server.name;
-            
+
             // Use the region field from database for categorization
             if (server.region === 'indian') {
                 indianSelect.appendChild(option);
@@ -193,11 +183,11 @@ async function loadServers() {
         if (otherSelect.options.length === 1) {
             otherSelect.innerHTML = '<option value="">No other servers available</option>';
         }
-        
+
         const totalServers = servers.length;
         console.log(`✅ Loaded ${totalServers} servers across 3 categories`);
         showToast(`Loaded ${totalServers} servers in 3 categories`, 'success');
-        
+
     } catch (error) {
         console.error('❌ Server load error:', error);
         showToast('Error loading servers: ' + error.message, 'error');
@@ -209,20 +199,20 @@ function setupServerSelection() {
     const bangladeshSelect = document.getElementById('bangladeshServerSelect');
     const otherSelect = document.getElementById('otherServerSelect');
     const statServer = document.getElementById('statServer');
-    
+
     function handleServerChange(e) {
         selectedServerUrl = e.target.value;
         const selectedText = e.target.options[e.target.selectedIndex].text;
-        
+
         if (statServer) {
             statServer.textContent = selectedText || 'Not Selected';
         }
-        
+
         console.log('🎯 Server selected:', selectedText, selectedServerUrl);
-        
+
         if (selectedServerUrl) {
             showToast(`Server "${selectedText}" selected`, 'success');
-            
+
             // Reset other dropdowns
             if (e.target === indianSelect) {
                 bangladeshSelect.value = '';
@@ -236,7 +226,7 @@ function setupServerSelection() {
             }
         }
     }
-    
+
     if (indianSelect) indianSelect.addEventListener('change', handleServerChange);
     if (bangladeshSelect) bangladeshSelect.addEventListener('change', handleServerChange);
     if (otherSelect) otherSelect.addEventListener('change', handleServerChange);
@@ -246,31 +236,31 @@ function setupServerSelection() {
 async function loadCategories() {
     try {
         console.log('🔄 Loading categories...');
-        
+
         if (!db) {
             console.error('❌ Database not initialized');
             return;
         }
-        
+
         const categoriesCol = collection(db, 'categories');
         const categorySnapshot = await getDocs(categoriesCol);
         const categoryTabs = document.getElementById('categoryTabs');
-        
+
         if (!categoryTabs) {
             console.error('❌ Category tabs element not found');
             return;
         }
-        
+
         categoryTabs.innerHTML = '';
-        
+
         const categories = [];
         categorySnapshot.forEach(doc => {
             categories.push({ id: doc.id, ...doc.data() });
         });
-        
+
         // Sort by order
         categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-        
+
         if (categories.length === 0) {
             console.log('⚠️ No categories found, using defaults');
             categoryTabs.innerHTML = `
@@ -287,24 +277,24 @@ async function loadCategories() {
                 btn.textContent = `${cat.icon || ''} ${cat.name}`;
                 btn.addEventListener('click', () => switchCategory(cat.id, btn));
                 categoryTabs.appendChild(btn);
-                
+
                 if (index === 0) currentCategory = cat.id;
             });
             console.log(`✅ Loaded ${categories.length} categories`);
         }
-        
+
         // Add click listeners for default tabs
         document.querySelectorAll('.category-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
+            tab.addEventListener('click', function () {
                 document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
                 currentCategory = this.dataset.category;
                 loadEmotes(currentCategory);
             });
         });
-        
+
         loadEmotes(currentCategory);
-        
+
     } catch (error) {
         console.error('❌ Category load error:', error);
         const categoryTabs = document.getElementById('categoryTabs');
@@ -331,23 +321,23 @@ function switchCategory(category, btnElement) {
 async function loadEmotes(category) {
     try {
         console.log('🔄 Loading emotes for category:', category);
-        
+
         if (!db) {
             console.error('❌ Database not initialized');
             return;
         }
-        
+
         const emotesCol = collection(db, 'emotes');
         const emoteSnapshot = await getDocs(emotesCol);
         const emoteGrid = document.getElementById('emoteGrid');
-        
+
         if (!emoteGrid) {
             console.error('❌ Emote grid element not found');
             return;
         }
-        
+
         emoteGrid.innerHTML = '';
-        
+
         let count = 0;
         emoteSnapshot.forEach(doc => {
             const emote = doc.data();
@@ -372,7 +362,7 @@ async function loadEmotes(category) {
         } else {
             console.log(`✅ Loaded ${count} emotes for ${category}`);
         }
-        
+
     } catch (error) {
         console.error('❌ Emote load error:', error);
         const emoteGrid = document.getElementById('emoteGrid');
@@ -386,43 +376,43 @@ async function loadEmotes(category) {
 async function sendEmoteInstantly(emoteId, cardElement) {
     const startTime = performance.now();
     console.log('⚡ INSTANT SEND:', emoteId);
-    
+
     // ✅ STEP 1: INSTANT UI UPDATE (0ms delay)
     selectedEmoteId = emoteId;
     const statEmote = document.getElementById('statEmote');
     if (statEmote) statEmote.textContent = emoteId;
-    
+
     document.querySelectorAll('.emote-card').forEach(c => c.classList.remove('selected'));
     cardElement.classList.add('selected');
-    
+
     // ✅ STEP 2: PRE-VALIDATED DATA (cached references)
     const teamCodeInput = document.getElementById('teamCode');
     const uid1Input = document.getElementById('uid1');
-    
+
     // Quick validation with early return
     if (!selectedServerUrl) {
         showToast('⚠️ Select server first', 'error');
         return;
     }
-    
+
     if (!teamCodeInput || !uid1Input) {
         showToast('❌ Form error', 'error');
         return;
     }
-    
+
     const tc = teamCodeInput.value.trim();
     const uid1 = uid1Input.value.trim();
-    
+
     if (!tc) {
         showToast('⚠️ Enter team code', 'error');
         return;
     }
-    
+
     if (!uid1 || !/^[0-9]{9,12}$/.test(uid1)) {
         showToast('⚠️ Valid UID required (9-12 digits)', 'error');
         return;
     }
-    
+
     // ✅ STEP 3: COLLECT UIDs IN SINGLE LOOP (optimized)
     const params = new URLSearchParams({
         server: selectedServerUrl,
@@ -430,7 +420,7 @@ async function sendEmoteInstantly(emoteId, cardElement) {
         uid1: uid1,
         emote_id: emoteId
     });
-    
+
     // Add additional UIDs efficiently
     for (let i = 2; i <= maxUids; i++) {
         const inp = document.getElementById(`uid${i}`);
@@ -438,19 +428,19 @@ async function sendEmoteInstantly(emoteId, cardElement) {
             params.append(`uid${i}`, inp.value.trim());
         }
     }
-    
+
     // ✅ STEP 4: BUILD URL (single operation)
     const url = `/.netlify/functions/send-emote?${params.toString()}`;
-    
+
     console.log('🌐 API URL Ready:', url);
-    
+
     // ✅ STEP 5: SHOW MINIMAL LOADER (optional, can remove for even faster feel)
     showLoader();
-    
+
     // ✅ STEP 6: PARALLEL API CALL WITH TIMEOUT PROTECTION
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-    
+
     try {
         // Fetch with keepalive for better performance
         const response = await fetch(url, {
@@ -460,15 +450,15 @@ async function sendEmoteInstantly(emoteId, cardElement) {
             keepalive: true,
             priority: 'high'
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         const result = await response.json();
-        
+
         hideLoader();
-        
+
         const elapsed = (performance.now() - startTime).toFixed(0);
-        
+
         if (result.success) {
             console.log(`✅ SUCCESS in ${elapsed}ms:`, result);
             showToast(`✓ ${emoteId} sent (${elapsed}ms)`, 'success');
@@ -476,11 +466,11 @@ async function sendEmoteInstantly(emoteId, cardElement) {
             console.error('❌ API ERROR:', result);
             showToast(`✗ ${result.error || 'Failed'}`, 'error');
         }
-        
+
     } catch (error) {
         clearTimeout(timeoutId);
         hideLoader();
-        
+
         if (error.name === 'AbortError') {
             console.error('⏱️ TIMEOUT after 10s');
             showToast('⏱️ Request timeout', 'error');
@@ -502,7 +492,7 @@ if (addUidBtn) {
             if (statUids) {
                 statUids.textContent = uidCount;
             }
-            
+
             if (uidCount >= maxUids) {
                 addUidBtn.disabled = true;
                 addUidBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" stroke-width="2"/></svg> MAX UIDs ADDED';
@@ -514,7 +504,7 @@ if (addUidBtn) {
 function addUidField(number) {
     const container = document.getElementById('uidContainer');
     if (!container) return;
-    
+
     const uidBox = document.createElement('div');
     uidBox.className = 'input-group-box uid-field';
     uidBox.id = `uidBox${number}`;
@@ -532,7 +522,7 @@ function addUidField(number) {
     container.appendChild(uidBox);
 }
 
-window.removeUid = function(number) {
+window.removeUid = function (number) {
     const uidBox = document.getElementById(`uidBox${number}`);
     if (uidBox) {
         uidBox.remove();
@@ -541,7 +531,7 @@ window.removeUid = function(number) {
         if (statUids) {
             statUids.textContent = uidCount;
         }
-        
+
         const addBtn = document.getElementById('addUidBtn');
         if (addBtn) {
             addBtn.disabled = false;
@@ -554,18 +544,18 @@ window.removeUid = function(number) {
 async function checkMaintenance() {
     try {
         if (!db) return;
-        
+
         const docRef = doc(db, 'settings', 'maintenance');
         const docSnap = await getDoc(docRef);
-        
+
         const overlay = document.getElementById('maintenanceOverlay');
         const msg = document.getElementById('maintenanceMsg');
-        
+
         if (docSnap.exists() && docSnap.data().enabled) {
             if (msg) msg.textContent = docSnap.data().message;
             if (overlay) overlay.classList.remove('hidden');
         }
-        
+
         // Real-time listener
         onSnapshot(docRef, (doc) => {
             if (doc.exists() && doc.data().enabled) {
@@ -584,10 +574,10 @@ async function checkMaintenance() {
 async function loadFooterLinks() {
     try {
         if (!db) return;
-        
+
         const docRef = doc(db, 'settings', 'footerLinks');
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
             const links = docSnap.data();
             const telegram = document.getElementById('footerTelegram');
@@ -595,7 +585,7 @@ async function loadFooterLinks() {
             const discord = document.getElementById('footerDiscord');
             const youtube = document.getElementById('footerYoutube');
             const maintenanceTG = document.getElementById('maintenanceTG');
-            
+
             if (telegram) telegram.href = links.telegram || '#';
             if (github) github.href = links.github || '#';
             if (discord) discord.href = links.discord || '#';
@@ -611,21 +601,21 @@ async function loadFooterLinks() {
 async function initializeDashboard() {
     console.log('🔥 NOVRA X Dashboard Initializing...');
     console.log('📱 Firebase Project:', firebaseConfig.projectId);
-    
+
     try {
         await checkMaintenance();
         await loadServers();
         setupServerSelection();
         await loadCategories();
         await loadFooterLinks();
-        
+
         console.log('✅ NOVRA X Dashboard Ready!');
         console.log('⚡ INSTANT SEND MODE ACTIVATED!');
-        
+
         setTimeout(() => {
             showToast('Dashboard loaded successfully!', 'success');
         }, 1000);
-        
+
     } catch (error) {
         console.error('❌ Dashboard initialization failed:', error);
         showToast('Dashboard initialization failed. Check console.', 'error');

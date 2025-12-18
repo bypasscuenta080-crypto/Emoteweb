@@ -2,17 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyDhnw6_WzZk418vAmtUFtkSLOJcJUmVp1A",
-  authDomain: "jwaxprime.firebaseapp.com",
-  projectId: "jwaxprime",
-  storageBucket: "jwaxprime.firebasestorage.app",
-  messagingSenderId: "182117079996",
-  appId: "1:182117079996:web:5501befd6c611900efe9b9",
-  measurementId: "G-W9GJ02LQBZ"
-};
+import { firebaseConfig } from './config.js';
 
 
 // Initialize Firebase
@@ -53,12 +43,12 @@ if (loginForm) {
         const emailInput = document.getElementById('adminEmail');
         const passwordInput = document.getElementById('adminPassword');
         const errorDiv = document.getElementById('adminLoginError');
-        
+
         if (!emailInput || !passwordInput || !errorDiv) {
             console.error('❌ Form elements not found');
             return;
         }
-        
+
         const email = emailInput.value;
         const password = passwordInput.value;
 
@@ -104,75 +94,75 @@ async function loadAllData() {
 async function loadServers() {
     const serverList = document.getElementById('serverList');
     if (!serverList) return;
-    
+
     serverList.innerHTML = '';
-    
+
     try {
         const serversCol = collection(db, 'servers');
         const snapshot = await getDocs(serversCol);
-        
+
         if (snapshot.empty) {
             serverList.innerHTML = '<p class="no-data">No servers added yet</p>';
             return;
         }
-        
+
         const servers = [];
         snapshot.forEach(doc => {
             servers.push({ id: doc.id, ...doc.data() });
         });
-        
+
         servers.sort((a, b) => (a.order || 0) - (b.order || 0));
-        
+
         // Group servers by region with proper categorization
         const indianServers = servers.filter(s => s.region === 'indian');
         const bangladeshServers = servers.filter(s => s.region === 'bangladesh');
         const otherServers = servers.filter(s => s.region === 'other');
-        
+
         console.log('📊 Server Categorization:', {
             indian: indianServers.length,
             bangladesh: bangladeshServers.length,
             other: otherServers.length
         });
-        
+
         // Create region headers
         if (indianServers.length > 0) {
             const regionHeader = document.createElement('div');
             regionHeader.className = 'region-header';
             regionHeader.innerHTML = `<h3>🇮🇳 Indian Servers (${indianServers.length})</h3>`;
             serverList.appendChild(regionHeader);
-            
+
             indianServers.forEach(server => {
                 serverList.appendChild(createServerItem(server));
             });
         }
-        
+
         if (bangladeshServers.length > 0) {
             const regionHeader = document.createElement('div');
             regionHeader.className = 'region-header';
             regionHeader.innerHTML = `<h3>🇧🇩 Bangladesh Servers (${bangladeshServers.length})</h3>`;
             serverList.appendChild(regionHeader);
-            
+
             bangladeshServers.forEach(server => {
                 serverList.appendChild(createServerItem(server));
             });
         }
-        
+
         if (otherServers.length > 0) {
             const regionHeader = document.createElement('div');
             regionHeader.className = 'region-header';
             regionHeader.innerHTML = `<h3>🌍 Other Servers (${otherServers.length})</h3>`;
             serverList.appendChild(regionHeader);
-            
+
             otherServers.forEach(server => {
                 serverList.appendChild(createServerItem(server));
             });
         }
-        
+
         // Show message if no servers in any category
         if (servers.length === 0) {
             serverList.innerHTML = '<p class="no-data">No servers added yet</p>';
         }
-        
+
     } catch (error) {
         console.error('Server load error:', error);
         serverList.innerHTML = '<p class="error-text">Error loading servers</p>';
@@ -182,13 +172,13 @@ async function loadServers() {
 function createServerItem(server) {
     const item = document.createElement('div');
     item.className = 'admin-item';
-    
-    const regionIcon = server.region === 'indian' ? '🇮🇳' : 
-                      server.region === 'bangladesh' ? '🇧🇩' : '🌍';
-    
+
+    const regionIcon = server.region === 'indian' ? '🇮🇳' :
+        server.region === 'bangladesh' ? '🇧🇩' : '🌍';
+
     const regionName = server.region === 'indian' ? 'Indian' :
-                      server.region === 'bangladesh' ? 'Bangladesh' : 'Other';
-    
+        server.region === 'bangladesh' ? 'Bangladesh' : 'Other';
+
     item.innerHTML = `
         <div class="admin-item-info">
             <strong>${regionIcon} ${server.name}</strong>
@@ -215,25 +205,25 @@ function createServerItem(server) {
             </button>
         </div>
     `;
-    
+
     // Add event listeners
     const editBtn = item.querySelector('[data-action="editServer"]');
     const deleteBtn = item.querySelector('[data-action="deleteServer"]');
-    
+
     editBtn.addEventListener('click', () => {
         editServer(
-            editBtn.dataset.id, 
-            editBtn.dataset.name, 
-            editBtn.dataset.url, 
+            editBtn.dataset.id,
+            editBtn.dataset.name,
+            editBtn.dataset.url,
             editBtn.dataset.region,
             editBtn.dataset.order
         );
     });
-    
+
     deleteBtn.addEventListener('click', () => {
         deleteServer(deleteBtn.dataset.id);
     });
-    
+
     return item;
 }
 
@@ -257,13 +247,13 @@ if (serverForm) {
 
         showLoader();
         try {
-            const serverData = { 
-                name, 
-                baseUrl, 
+            const serverData = {
+                name,
+                baseUrl,
                 region: region, // Ensure region is properly saved
-                order 
+                order
             };
-            
+
             if (editId) {
                 await updateDoc(doc(db, 'servers', editId), serverData);
                 console.log('✅ Server updated:', serverData);
@@ -271,7 +261,7 @@ if (serverForm) {
                 await addDoc(collection(db, 'servers'), serverData);
                 console.log('✅ Server added:', serverData);
             }
-            
+
             serverForm.reset();
             document.getElementById('editServerId').value = '';
             document.getElementById('serverBtnText').textContent = 'ADD SERVER';
@@ -291,7 +281,7 @@ if (serverForm) {
 function getRegionName(region) {
     const regions = {
         'indian': 'Indian 🇮🇳',
-        'bangladesh': 'Bangladesh 🇧🇩', 
+        'bangladesh': 'Bangladesh 🇧🇩',
         'other': 'Other 🌍'
     };
     return regions[region] || 'Unknown';
@@ -299,7 +289,7 @@ function getRegionName(region) {
 
 function editServer(id, name, url, region, order) {
     console.log('✏️ Editing Server:', { id, name, url, region, order });
-    
+
     document.getElementById('editServerId').value = id;
     document.getElementById('serverName').value = name;
     document.getElementById('serverUrl').value = url;
@@ -339,25 +329,25 @@ if (cancelServerEdit) {
 async function loadCategories() {
     const categoryList = document.getElementById('categoryList');
     if (!categoryList) return;
-    
+
     categoryList.innerHTML = '';
-    
+
     try {
         const categoriesCol = collection(db, 'categories');
         const snapshot = await getDocs(categoriesCol);
-        
+
         if (snapshot.empty) {
             categoryList.innerHTML = '<p class="no-data">No categories added yet</p>';
             return;
         }
-        
+
         const categories = [];
         snapshot.forEach(doc => {
             categories.push({ id: doc.id, ...doc.data() });
         });
-        
+
         categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-        
+
         categories.forEach(cat => {
             const item = document.createElement('div');
             item.className = 'admin-item';
@@ -381,20 +371,20 @@ async function loadCategories() {
             `;
             categoryList.appendChild(item);
         });
-        
+
         // Add event listeners
         categoryList.querySelectorAll('[data-action="editCategory"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 editCategory(btn.dataset.id, btn.dataset.name, btn.dataset.icon, btn.dataset.order);
             });
         });
-        
+
         categoryList.querySelectorAll('[data-action="deleteCategory"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 deleteCategory(btn.dataset.id);
             });
         });
-        
+
     } catch (error) {
         console.error('Category load error:', error);
     }
@@ -406,16 +396,16 @@ async function loadCategoryDropdown() {
         const snapshot = await getDocs(categoriesCol);
         const select = document.getElementById('emoteCategory');
         if (!select) return;
-        
+
         select.innerHTML = '<option value="">Select Category</option>';
-        
+
         const categories = [];
         snapshot.forEach(doc => {
             categories.push({ id: doc.id, ...doc.data() });
         });
-        
+
         categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-        
+
         categories.forEach(cat => {
             const option = document.createElement('option');
             option.value = cat.id;
@@ -439,13 +429,13 @@ if (categoryForm) {
         showLoader();
         try {
             const categoryData = { name, icon, order };
-            
+
             if (editId) {
                 await updateDoc(doc(db, 'categories', editId), categoryData);
             } else {
                 await addDoc(collection(db, 'categories'), categoryData);
             }
-            
+
             categoryForm.reset();
             document.getElementById('editCategoryId').value = '';
             document.getElementById('categoryBtnText').textContent = 'ADD CATEGORY';
@@ -501,18 +491,18 @@ if (cancelCategoryEdit) {
 async function loadEmotes() {
     const emoteList = document.getElementById('emoteList');
     if (!emoteList) return;
-    
+
     emoteList.innerHTML = '';
-    
+
     try {
         const emotesCol = collection(db, 'emotes');
         const snapshot = await getDocs(emotesCol);
-        
+
         if (snapshot.empty) {
             emoteList.innerHTML = '<p class="no-data">No emotes added yet</p>';
             return;
         }
-        
+
         snapshot.forEach(doc => {
             const emote = doc.data();
             const item = document.createElement('div');
@@ -540,20 +530,20 @@ async function loadEmotes() {
             `;
             emoteList.appendChild(item);
         });
-        
+
         // Add event listeners
         emoteList.querySelectorAll('[data-action="editEmote"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 editEmote(btn.dataset.id, btn.dataset.url, btn.dataset.category);
             });
         });
-        
+
         emoteList.querySelectorAll('[data-action="deleteEmote"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 deleteEmote(btn.dataset.id);
             });
         });
-        
+
     } catch (error) {
         console.error('Emote load error:', error);
     }
@@ -581,20 +571,20 @@ if (emoteForm) {
         const editId = document.getElementById('editEmoteId').value;
         const imageUrl = document.getElementById('emoteImageUrl').value;
         const category = document.getElementById('emoteCategory').value;
-        
+
         const filename = imageUrl.split('/').pop();
         const emoteId = filename.split('.')[0];
 
         showLoader();
         try {
             const emoteData = { imageUrl, category, emoteId };
-            
+
             if (editId) {
                 await updateDoc(doc(db, 'emotes', editId), emoteData);
             } else {
                 await addDoc(collection(db, 'emotes'), emoteData);
             }
-            
+
             emoteForm.reset();
             document.getElementById('editEmoteId').value = '';
             document.getElementById('emoteBtnText').textContent = 'ADD EMOTE';
@@ -724,7 +714,7 @@ if (passwordForm) {
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const newPassword = document.getElementById('newPassword').value;
-        
+
         showLoader();
         try {
             const hash = await hashPassword(newPassword);

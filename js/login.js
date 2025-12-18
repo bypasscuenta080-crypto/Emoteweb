@@ -3,17 +3,7 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyDhnw6_WzZk418vAmtUFtkSLOJcJUmVp1A",
-  authDomain: "jwaxprime.firebaseapp.com",
-  projectId: "jwaxprime",
-  storageBucket: "jwaxprime.firebasestorage.app",
-  messagingSenderId: "182117079996",
-  appId: "1:182117079996:web:5501befd6c611900efe9b9",
-  measurementId: "G-W9GJ02LQBZ"
-};
+import { firebaseConfig } from './config.js';
 
 
 // Initialize Firebase
@@ -25,7 +15,7 @@ async function loadSocialLinks() {
     try {
         const docRef = doc(db, 'settings', 'footerLinks');
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
             const links = docSnap.data();
             document.getElementById('telegram').href = links.telegram || '#';
@@ -51,20 +41,20 @@ async function hashPassword(password) {
 // Login Form Handler
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const input = document.getElementById('loginPassword');
     const errorMsg = document.getElementById('loginError');
     const password = input.value;
-    
+
     try {
         const docRef = doc(db, 'settings', 'loginPassword');
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
             // Password exists - verify it
             const storedHash = docSnap.data().hash;
             const inputHash = await hashPassword(password);
-            
+
             if (inputHash === storedHash) {
                 // Login successful
                 sessionStorage.setItem('auth', 'true');
@@ -74,7 +64,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 input.classList.add('shake');
                 errorMsg.textContent = '❌ Invalid Password';
                 errorMsg.classList.remove('hidden');
-                
+
                 setTimeout(() => {
                     input.classList.remove('shake');
                     errorMsg.classList.add('hidden');
