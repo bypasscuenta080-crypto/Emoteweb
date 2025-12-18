@@ -79,7 +79,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         }
     } catch (error) {
         console.error('Login error:', error);
-        errorMsg.textContent = '❌ Connection Error - Check Firebase setup';
+        errorMsg.textContent = '❌ Error: ' + error.message;
         errorMsg.classList.remove('hidden');
     }
 });
