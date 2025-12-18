@@ -47,36 +47,51 @@ exports.handler = async (event, context) => {
 
     urlParts.push(`emote_id=${encodeURIComponent(params.emote_id)}`);
 
-    const apiUrl = urlParts.join('&');
+    // Ensure the Server URL points to the webhook endpoint if not already
+    // The bot listens on /invite
+    let targetUrl = params.server;
+    if (!targetUrl.endsWith('/invite')) {
+      // Handle trailing slash
+      if (targetUrl.endsWith('/')) {
+        targetUrl = targetUrl + 'invite';
+      } else {
+        targetUrl = targetUrl + '/invite';
+      }
+    }
 
-    console.log('⚡ API Call:', apiUrl);
+    console.log(`⚡ API Call: Sending POST to Bot: ${targetUrl}`, payload);
 
-    // ✅ Fast fetch with timeout protection and optimized headers
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-    const response = await fetch(apiUrl, {
-      method: 'GET',
+    const response = await fetch(targetUrl, {
+      method: "POST", // Changed from GET to POST
       headers: {
-        'User-Agent': 'NOVRA-X-Bot/1.0',
-        'Accept': '*/*',
-        'Connection': 'keep-alive'
+        "Content-Type": "application/json",
+        "User-Agent": "Netlify-Proxy"
       },
+      body: JSON.stringify(payload), // Send JSON body
       signal: controller.signal
     });
 
     clearTimeout(timeout);
 
-    // ✅ Stream response for faster processing
-    const responseText = await response.text();
+    // Retrieve response text
+    const data = await response.text();
+    // const headers = {}; // Not used in the final return, so commenting out
+    // response.headers.forEach((val, key) => { headers[key] = val; }); // Not used
 
     const elapsed = Date.now() - startTime;
 
     console.log(`✅ Response in ${elapsed}ms - Status: ${response.status}`);
 
-    // ✅ Minimal response payload for speed
+    // If json, try to parse
+    let parsedData = data;
+    try {
+      parsedData = JSON.parse(data);
+    } catch (e) {
+      // ignore
+    }
+
     return {
-      statusCode: 200,
+      statusCode: 200, // Return 200 even on error to prevent frontend crash, but with success: false
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
@@ -84,11 +99,11 @@ exports.handler = async (event, context) => {
         'Cache-Control': 'no-cache'
       },
       body: JSON.stringify({
-        success: true,
+        success: response.ok,
         status: response.status,
         elapsed: elapsed,
-        message: 'Emote sent successfully',
-        data: responseText
+        message: response.ok ? "Emote Request Sent to Bot" : "Bot Error",
+        data: parsedData
       })
     };
 
